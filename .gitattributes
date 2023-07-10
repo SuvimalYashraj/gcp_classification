@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+*.file filter=lfs diff=lfs merge=lfs -text
+roberta_model_ep5_lr1e5 filter=lfs diff=lfs merge=lfs -text
