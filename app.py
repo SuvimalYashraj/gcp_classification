@@ -1,0 +1,60 @@
+import pandas as pd
+import numpy as np
+import torch
+from flask import Flask, request, jsonify
+from flask_cors import CORS, cross_origin
+from transformers import RobertaForSequenceClassification, RobertaTokenizer
+from sklearn.metrics import accuracy_score
+
+def preprocessing(questions):
+    # Load the tokenizer
+    tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
+
+    # Tokenize your dataset
+    questions_tokenized = tokenizer(questions, padding=True, truncation=True, max_length=512, return_tensors='pt')
+    
+    return questions_tokenized
+
+
+# Create a Flask application
+app = Flask(__name__)
+CORS(app, origins='*', methods=['GET', 'POST'])
+
+# Define a route for your API
+@app.route('/predict', methods=['GET','POST'])
+@cross_origin()
+def predict():
+    if request.method == 'GET':
+        input_data = request.args.get('input','')
+        return input_data
+
+
+    # Get the request data as a JSON object
+    data = request.get_json()
+
+    # Extract the list of strings from the request data
+    question_list = data.get('string_list')
+
+    # Preprocess the input data
+    val_loader = preprocessing(question_list)
+
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
+    val_loader = {k: v.to(device) for k, v in val_loader.items()}
+
+    # Load the trained model
+    model = torch.load('roberta_model_ep5_lr1e5')
+    model.to(device)
+    model.eval()
+
+    # Make predictions with the model
+    outputs = model(**val_loader)
+    predictions = torch.argmax(outputs.logits, dim=1).tolist()
+
+    result = jsonify({'predictions': predictions})
+
+    return result
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
