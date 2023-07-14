@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 
 import torch
-from transformers import RobertaTokenizer
+from transformers import RobertaTokenizer, RobertaForSequenceClassification
 
 
 def preprocessing(questions):
@@ -42,7 +42,8 @@ def predict():
     val_loader = {k: v.to(device) for k, v in val_loader.items()}
 
     # Load the trained model
-    model = torch.load("roberta_model_ep5_lr1e5")
+    model = RobertaForSequenceClassification.from_pretrained('roberta-base',num_labels=3).to(device)
+    model.load_state_dict(torch.load("roberta_combined_state_dict.pth"))
     model.to(device)
     model.eval()
 
@@ -56,4 +57,4 @@ def predict():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=8080, debug=True)
